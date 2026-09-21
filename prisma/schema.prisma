@@ -1,0 +1,207 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                    String              @id @default(cuid())
+  name                  String
+  username              String              @unique
+  email                 String              @unique
+  passwordHash          String
+  profileImage          String?
+  coverImageUrl         String?
+  bio                   String?
+  tagline               String?
+  location              String?
+  birthday              DateTime?
+  pronouns              String?
+  statusPill            String?
+  handwrittenHeader     String?
+  handwrittenFooter     String?
+  quoteBlock            String?
+  isPublic              Boolean             @default(true)
+  role                  String              @default("USER") // "USER" | "ADMIN"
+  isSuspended           Boolean             @default(false)
+  isVerified            Boolean             @default(false)
+  isPremium             Boolean             @default(false)
+  subscriptionPlan      String              @default("FREE") // "FREE" | "PRO" | "VIP"
+  profileViews          Int                 @default(0)
+  emailVerified         DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  // Section Models
+  personality           PersonalityProfile?
+  lifestyle             LifestyleProfile?
+  hobbies               HobbyItem[]
+  favorites             FavoriteMediaItem[]
+  preferences           PreferenceItem[]
+  quotes                QuoteItem[]
+  socials               SocialLinkItem[]
+  sectionSettings       SectionSetting[]
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
+}
+
+model PersonalityProfile {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  description           String?
+  personalityType       String?  // e.g., ENFP, INFJ, Type 7
+  traits                String?  // Comma-separated list of traits
+  values                String?  // Comma-separated list of core values
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model LifestyleProfile {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chronotype            String?  // 'Morning Lark' | 'Night Owl' | 'Flexible'
+  socialEnergy          String?  // 'Introvert' | 'Extrovert' | 'Ambivert'
+  freeTimeActivity      String?
+  weekendActivities     String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model HobbyItem {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  icon        String?  // Emoji or icon name
+  category    String?  // e.g. Outdoor, Creative, Music
+  orderIndex  Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model FavoriteMediaItem {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    String   // 'food' | 'music' | 'movie' | 'tvshow' | 'book' | 'game' | 'sport' | 'travel'
+  title       String
+  subtitle    String?
+  imageUrl    String?
+  description String?
+  orderIndex  Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model PreferenceItem {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // 'like' | 'dislike' | 'enjoy' | 'avoid'
+  label       String
+  orderIndex  Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model QuoteItem {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content     String
+  author      String?
+  isFeatured  Boolean  @default(false)
+  orderIndex  Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model SocialLinkItem {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform    String   // 'instagram' | 'youtube' | 'twitter' | 'github' | 'website' | 'spotify' | 'other'
+  url         String
+  label       String?
+  createdAt   DateTime @default(now())
+}
+
+model SectionSetting {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sectionKey  String   // 'about' | 'personality' | 'hobbies' | 'favorites' | 'preferences' | 'lifestyle' | 'social' | 'quotes'
+  isVisible   Boolean  @default(true)
+  orderIndex  Int      @default(0)
+
+  @@unique([userId, sectionKey])
+}
+
+model PrivacySettings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  profileVisibility     String   @default("PUBLIC") // "PUBLIC" | "MEMBERS_ONLY" | "PRIVATE"
+  locationVisibility    String   @default("PUBLIC") // "PUBLIC" | "FOLLOWERS" | "PRIVATE"
+  birthdayVisibility    String   @default("PRIVATE") // "PUBLIC" | "FOLLOWERS" | "PRIVATE"
+  hobbiesVisibility     String   @default("PUBLIC") // "PUBLIC" | "FOLLOWERS" | "PRIVATE"
+  favoritesVisibility   String   @default("PUBLIC") // "PUBLIC" | "FOLLOWERS" | "PRIVATE"
+  personalityVisibility String   @default("PUBLIC") // "PUBLIC" | "FOLLOWERS" | "PRIVATE"
+  lifestyleVisibility   String   @default("PUBLIC") // "PUBLIC" | "FOLLOWERS" | "PRIVATE"
+  updatedAt             DateTime @updatedAt
+}
+
+model UserBlock {
+  id          String   @id @default(cuid())
+  blockerId   String
+  blockedId   String
+  createdAt   DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+}
+
+model UserMute {
+  id          String   @id @default(cuid())
+  muterId     String
+  mutedId     String
+  createdAt   DateTime @default(now())
+
+  @@unique([muterId, mutedId])
+}
+
+model UserReport {
+  id          String   @id @default(cuid())
+  reporterId  String
+  reportedId  String
+  reason      String
+  details     String?
+  status      String   @default("PENDING") // "PENDING" | "REVIEWED" | "RESOLVED"
+  createdAt   DateTime @default(now())
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  updatedAt   DateTime @updatedAt
+}
+
+
